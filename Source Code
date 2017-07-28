@@ -1,0 +1,211 @@
+#include <LiquidCrystal.h>
+LiquidCrystal anzeige(12, 11, 5, 4, 3, 2);
+int trigger1=22; 
+int echo1=24;
+int trigger2=38; 
+int echo2=40; 
+
+int dauer1;
+int dauer2;
+
+long entfernung1=0;
+long entfernung2=0;
+
+int lampenauswahl;
+int lampe;
+
+int bright;
+int bright1;
+int bright3;
+int bright2;
+int ledPin =9;
+int ledPin2 =7;
+int ledPin3 =6;
+int sensor = A1;
+int counter = 0; //zum zählen der Klatscher. Damit immer nur genau 2
+long startPunkt = 0;
+boolean zustandLight = false;
+boolean zustandEins = false;
+boolean zustandZwei = false;
+boolean zustandDrei = false;
+int zustandSensor;
+
+ 
+void setup()
+{
+  pinMode (sensor, INPUT);
+  pinMode  (2, OUTPUT);
+  anzeige.begin(16,2);
+ 
+  pinMode(trigger1, OUTPUT); 
+  pinMode(echo1, INPUT);
+  pinMode(trigger2, OUTPUT); 
+  pinMode(echo2, INPUT);
+
+  pinMode(ledPin, OUTPUT);
+  pinMode(ledPin2, OUTPUT); 
+  pinMode(ledPin3, OUTPUT);  
+
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  micro();
+  helligkeitWahl();
+  lampenWahl();
+  Serial.println(zustandSensor);
+  delay(100); 
+
+}
+
+void micro()
+{
+  zustandSensor = analogRead(sensor); //auslesen des Sensors
+  
+  if (zustandSensor >= 35 || zustandSensor <= 22) //standard "nulllinie" bei 27, aufnehmen eines geräusches, welches nach oben oder unten über die angegebenen werte ausschlägt
+  {
+    if (counter == 0) //falls noch kein Klatscher aufgenommen wurde...
+    {
+      startPunkt = millis(); //Startpunkt auf den Zeitpunkt des ersten Klatschers setzen
+      counter++; 
+    }
+    else if (counter > 0 && 900 > millis()-startPunkt && millis()-startPunkt >= 100) // falls bereits ein Klatscher aufgezeichnet wurde und der Abstand zum ersten Klatscher bereits eine Viertelsekunde beträgt und nicht länger als eine sekunde später kommt...
+    {
+      counter++;
+    }
+    else
+    {
+      counter = 0;
+    }
+  }
+
+   if (counter ==2) // falls zwei Mal geklatscht wurde...
+   {
+    if(zustandLight == false) // falls das Licht im Moment aus ist...
+    {
+     analogWrite(lampenauswahl, bright); // Licht anmachen
+     zustandLight = true; //zustand des Lichtes auf an setzen
+    }
+    else if(zustandLight == true) // das gleiche anders herum
+    {
+    analogWrite(lampenauswahl, LOW);
+    zustandLight = false;
+    }
+    counter = 0; // Klatsch counter wird zurückgesetzt...
+  }
+}
+
+ void lampenWahl()
+ {
+  digitalWrite(trigger2, LOW); 
+  delay(5); 
+  digitalWrite(trigger2, HIGH); //Eine Ultraschallwelle wird entsendet.
+  delay(10);
+  digitalWrite(trigger2, LOW);  //
+
+
+
+  dauer2 = pulseIn(echo2, HIGH); //Speichert die Dauer des Ultraschalls in Mikrosekunden.
+  entfernung2 = (dauer2/2) * 0.03432; //Die Dauer des Ultraschalls bis zum Objekt.
+ 
+  if (entfernung2 >= 0 && entfernung2 <= 30){ //Zwischen 0 - 30 cm befindet sich die Lampenauswahl
+  
+
+    if (entfernung2 >= 1 && entfernung2 <= 8){
+      lampenauswahl = 6;  // Pin Nummer, der jeweiligen Lampe
+      bright = bright1;   // ruft den Helligkeitswert von Lampe 1 auf.
+      anzeige.setCursor(0,0);  // setzt den Cursor für das LCD Display
+      anzeige.print("Lampe 1");  // übergibt den String an das Display
+      zustandLight = zustandEins; // speichert den Zustand ab
+    }
+    if (entfernung2 >= 11 && entfernung2 <= 18){
+      lampenauswahl = 7;
+      bright = bright2; // ruft den Helligkeitswert von Lampe 2 auf.
+      anzeige.setCursor(0,0);
+      anzeige.print("Lampe 2");
+      zustandLight = zustandZwei;
+    }
+    if (entfernung2 >= 21 && entfernung2 <= 28){
+      lampenauswahl = 9;
+      bright = bright3; // ruft den Helligkeitswert von Lampe 3 auf.
+      anzeige.setCursor(0,0);
+      anzeige.print("Lampe 3");
+      zustandLight = zustandDrei;
+    }    
+  }
+ }
+
+ void helligkeitWahl()
+ {
+  digitalWrite(trigger1, LOW); // Pin ausschalten
+  delay(5); 
+  digitalWrite(trigger1, HIGH); // Eine Ultraschallwelle wird entsendet
+  delay(10);
+  digitalWrite(trigger1, LOW);
+
+  dauer1 = pulseIn(echo1, HIGH); 
+  entfernung1 = (dauer1/2) * 0.03432;
+
+  if ( entfernung1 <=-1 || entfernung1 >= 36){ 
+  
+    if ( lampenauswahl == 6 ){
+      bright = bright1;  
+    
+    }
+    if ( lampenauswahl == 7){
+      bright = bright2;
+    
+    }
+    if ( lampenauswahl == 9){
+      bright = bright3;   
+    }
+  }
+
+
+
+  if ( zustandLight == true)
+  {
+    if ( entfernung1 >= 0 && entfernung1 <= 35){
+  
+        if (entfernung1 >= 0 && entfernung1 <= 10)
+        {    
+         bright = 50; // setzt Bright auf 50
+        }
+        if (entfernung1 >= 11 && entfernung1 <= 15)
+        {
+        bright = 100;
+        }
+        if (entfernung1 >= 16 && entfernung1 <= 21)
+        {
+           bright = 150;
+        }
+        if (entfernung1 >= 22 && entfernung1 <= 28)
+        {
+         bright = 200;
+        }
+        if (entfernung1 >= 29 && entfernung1 <= 35)
+        {
+        bright = 250;
+        }
+     
+  
+    if ( lampenauswahl == 6 ){
+      bright1 = bright;   // speichert den aktuellen Helligkeitswert ab.
+      zustandEins = zustandLight;
+  
+    }
+    if ( lampenauswahl == 7){
+      bright2 = bright;
+      zustandZwei = zustandLight;
+  
+    }
+    if ( lampenauswahl == 9){
+      bright3 = bright;
+      zustandDrei = zustandLight;
+    }
+  
+   analogWrite(lampenauswahl, bright);    // übergibt der ausgewählten Lampe den Helligkeitswert
+  }
+  }
+ }
